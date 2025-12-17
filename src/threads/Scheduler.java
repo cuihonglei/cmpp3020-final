@@ -29,6 +29,7 @@ public class Scheduler {
 
         // 1. Validate event validity
         validateEvent(event);
+        logs.add("[SCHEDULE] Start scheduling event: " + event.getName());
 
         // 2. Create a Callable task for each Room.
         List<Callable<Room>> tasks = rooms.stream()
@@ -40,8 +41,8 @@ public class Scheduler {
                         }
                     } catch (CapacityExceededException e) {
                         // This is converted to a runtime exception, allowing invokeAny to continue attempting other tasks.
-                        throw new RuntimeException(
-                                "Capacity exceeded for room: " + room.getId(), e);
+                        System.out.println("Capacity check failed: " + e.getMessage() + ", code: "+e.getCode());   
+                        logs.add("[CAPACITY_FAIL][" + Thread.currentThread().getName() + "] "+ "Room " + room.getId()+ " cannot host event " + event.getName());
                     }
 
                     // Inappropriate: An exception must be thrown; null cannot be returned.
