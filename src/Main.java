@@ -28,7 +28,7 @@ public class Main {
 
         while (running) {
             printMenu();
-            int choice = readInt();
+            int choice = readMenuChoice();
 
             switch (choice) {
                 case 1:
@@ -99,6 +99,16 @@ public class Main {
         System.out.print("Enter your choice: ");
     }
 
+    private static int readMenuChoice() {
+        while (!scanner.hasNextInt()) {
+            System.out.print("Please enter a number: ");
+            scanner.next();
+        }
+        int value = scanner.nextInt();
+        scanner.nextLine();
+        return value;
+    }
+
     // =========================
     // Room operations
     // =========================
@@ -106,15 +116,43 @@ public class Main {
     private static void addRoom() {
         System.out.println("\n--- Add Room ---");
 
-        System.out.print("Room ID: ");
-        String id = scanner.nextLine();
+        String id;
+        while (true) {
+            System.out.print("Room ID (positive integer): ");
+            String checkId = scanner.nextLine().trim();
 
-        System.out.print("Capacity: ");
-        int capacity = readInt();
+            if (!checkId.matches("\\d+")) {
+                System.out.println("Room ID must be a positive integer.");
+                continue;
+            }
+
+            if (Integer.parseInt(checkId) <= 0) {
+                System.out.println("Room ID must be greater than 0.");
+                continue;
+            }
+
+            boolean exists = rooms.stream()
+                    .anyMatch(r -> r.getId().equals(checkId));
+
+            if (exists) {
+                System.out.println("Room ID already exists.");
+                continue;
+            }
+
+            id = checkId;
+            break;
+        }
+
+        int capacity = readPositiveInt("Capacity (>0): ");
 
         System.out.print("Equipment (comma separated): ");
         String eqLine = scanner.nextLine();
-        List<String> equipment = Arrays.asList(eqLine.split(","));
+        List<String> equipment;
+        if (eqLine.isEmpty()) {
+            equipment = Collections.emptyList(); // Creates a truly empty list
+        } else {
+            equipment = Arrays.asList(eqLine.split(","));
+        }
 
         rooms.add(new Room(id, capacity, equipment));
         logs.add("Room added: " + id);
@@ -160,8 +198,7 @@ public class Main {
         System.out.print("Event name: ");
         String name = scanner.nextLine();
 
-        System.out.print("Attendees: ");
-        int attendees = readInt();
+        int attendees = readPositiveInt("Attendees (>0): ");
 
         System.out.print("Required equipment (comma separated): ");
         String eqLine = scanner.nextLine();
@@ -217,7 +254,7 @@ public class Main {
         String name = scanner.nextLine();
 
         System.out.print("Attendees: ");
-        int attendees = readInt();
+        int attendees = readPositiveInt("Attendees (>0): ");
 
         System.out.print("Required equipment (comma separated): ");
         String eqLine = scanner.nextLine();
@@ -353,15 +390,24 @@ public class Main {
     // Utility
     // =========================
 
-    private static int readInt() {
-        while (!scanner.hasNextInt()) {
-            System.out.print("Please enter a valid number: ");
-            scanner.next();
+    private static int readPositiveInt(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            if (!scanner.hasNextInt()) {
+                System.out.println("Must be a positive integer.");
+                scanner.next();
+                continue;
+            }
+            int value = scanner.nextInt();
+            scanner.nextLine();
+            if (value <= 0) {
+                System.out.println("Must be greater than 0.");
+            } else {
+                return value;
+            }
         }
-        int value = scanner.nextInt();
-        scanner.nextLine(); // clear newline
-        return value;
     }
 }
+
 
 
