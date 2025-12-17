@@ -165,7 +165,12 @@ public class Main {
 
         System.out.print("Required equipment (comma separated): ");
         String eqLine = scanner.nextLine();
-        List<String> equipment = Arrays.asList(eqLine.split(","));
+        List<String> equipment;
+        if (eqLine.isEmpty()) {
+            equipment = Collections.emptyList(); // Creates a truly empty list
+        } else {
+            equipment = Arrays.asList(eqLine.split(","));
+        }
 
         events.add(new Event(name, attendees, equipment));
         logs.add("Event added: " + name);
@@ -216,7 +221,12 @@ public class Main {
 
         System.out.print("Required equipment (comma separated): ");
         String eqLine = scanner.nextLine();
-        List<String> equipment = Arrays.asList(eqLine.split(","));
+        List<String> equipment;
+        if (eqLine.isEmpty()) {
+            equipment = Collections.emptyList(); // Creates a truly empty list
+        } else {
+            equipment = Arrays.asList(eqLine.split(","));
+        }
 
         Event event = new Event(name, attendees, equipment);
 
