@@ -37,6 +37,7 @@ public class Scheduler {
                     try {
                         // Can it accommodate + atomic occupancy
                         if (room.canHost(event) && room.occupy()) {
+                            logs.add("[SUCCESS][" + Thread.currentThread().getName() + "] "+ "Event " + event.getName()+ " assigned to room " + room.getId());
                             return room; // Success: invokeAny will return immediately.
                         }
                     } catch (CapacityExceededException e) {
