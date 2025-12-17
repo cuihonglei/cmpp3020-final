@@ -118,21 +118,25 @@ public class Main {
 
         String id;
         while (true) {
-            System.out.print("Room ID (positive integer): ");
+            System.out.print("Room ID (e.g., R101): ");
             String checkId = scanner.nextLine().trim();
 
-            if (!checkId.matches("\\d+")) {
-                System.out.println("Room ID must be a positive integer.");
+            // 1. Check if it matches 'R' followed by one or more digits
+            if (!checkId.matches("R\\d+")) {
+                System.out.println("Room ID must start with 'R' followed by a positive integer (e.g., R1).");
                 continue;
             }
 
-            if (Integer.parseInt(checkId) <= 0) {
-                System.out.println("Room ID must be greater than 0.");
+            // 2. Extract the number part (everything after the 'R') to check if it's > 0
+            int idValue = Integer.parseInt(checkId.substring(1));
+            if (idValue <= 0) {
+                System.out.println("Room ID number must be greater than 0.");
                 continue;
             }
 
+            // 3. Check for uniqueness
             boolean exists = rooms.stream()
-                    .anyMatch(r -> r.getId().equals(checkId));
+                    .anyMatch(r -> r.getId().equalsIgnoreCase(checkId));
 
             if (exists) {
                 System.out.println("Room ID already exists.");
