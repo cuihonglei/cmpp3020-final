@@ -232,7 +232,7 @@ public class Main {
     }
 
     // =========================
-    // ⭐Cancel Scheduling
+    // Cancel Scheduling
     // =========================
     private static void clearAllBookings() {
         System.out.println("\n--- Clearing All Bookings ---");
@@ -241,7 +241,6 @@ public class Main {
             room.release();
     }
 
-        // 可选：是否清 Scheduler 日志
         // scheduler.clearLogs();
 
         System.out.println("All room bookings have been cleared.");
