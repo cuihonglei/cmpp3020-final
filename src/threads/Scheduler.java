@@ -43,7 +43,7 @@ public class Scheduler {
                     } catch (CapacityExceededException e) {
                         // This is converted to a runtime exception, allowing invokeAny to continue attempting other tasks.
                         System.out.println("Capacity check failed: " + e.getMessage() + ", code: "+e.getCode());   
-                        logs.add("[CAPACITY_FAIL][" + Thread.currentThread().getName() + "] "+ "Room " + room.getId()+ " cannot host event " + event.getName());
+                        logs.add("[FAIL][" + Thread.currentThread().getName() + "] "+ "Room " + room.getId()+ " cannot host event " + event.getName());
                     }
 
                     // Inappropriate: An exception must be thrown; null cannot be returned.
@@ -58,6 +58,7 @@ public class Scheduler {
 
         } catch (InterruptedException | ExecutionException e) {
             // All tasks fail, or the thread is interrupted.
+            logs.add("[FAIL][" + Thread.currentThread().getName() + "] "+ "Event " + event.getName()+ " No available room.");
             throw new RoomUnavailableException(
                     "No available room can host event: " + event.getName(), 403);
         }
