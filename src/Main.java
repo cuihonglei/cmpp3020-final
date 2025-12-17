@@ -50,18 +50,21 @@ public class Main {
                     viewEvents();
                     break;
                 case 7:
-                    scheduleEvents();
+                    scheduleEvent();
                     break;
                 case 8:
-                    clearAllBookings();
+                    scheduleEvents();
                     break;
                 case 9:
-                    viewLogs();
+                    clearAllBookings();
                     break;
                 case 10:
-                    loadTestData();
+                    viewLogs();
                     break;
                 case 11:
+                    loadTestData();
+                    break;
+                case 12:
                     running = false;
                     System.out.println("System exited. Goodbye!");
                     break;
@@ -86,11 +89,12 @@ public class Main {
         System.out.println("| 4. Add event                                        |");
         System.out.println("| 5. Remove event                                     |");
         System.out.println("| 6. View events                                      |");
-        System.out.println("| 7. Schedule events                                  |");
-        System.out.println("| 8. Clear all bookings                               |");
-        System.out.println("| 9. View scheduling logs                             |");
-        System.out.println("| 10. Load test data                                  |");
-        System.out.println("| 11. Exit                                            |");
+        System.out.println("| 7. Schedule single event                            |");
+        System.out.println("| 8. Batch schedule events                            |");
+        System.out.println("| 9. Clear all bookings                               |");
+        System.out.println("| 10. View scheduling logs                            |");
+        System.out.println("| 11. Load test data                                  |");
+        System.out.println("| 12. Exit                                            |");
         System.out.println(" —————————————————————————————————————————————————————");
         System.out.print("Enter your choice: ");
     }
@@ -201,6 +205,41 @@ public class Main {
     // Scheduling
     // =========================
 
+    private static void scheduleEvent() {
+        System.out.println("\n--- Schedule Single Event ---");
+
+        System.out.print("Event name: ");
+        String name = scanner.nextLine();
+
+        System.out.print("Attendees: ");
+        int attendees = readInt();
+
+        System.out.print("Required equipment (comma separated): ");
+        String eqLine = scanner.nextLine();
+        List<String> equipment = Arrays.asList(eqLine.split(","));
+
+        Event event = new Event(name, attendees, equipment);
+
+        try {
+            Booking booking = scheduler.schedule(event);
+            String msg = "Scheduled: " + booking;
+            System.out.println(msg);
+            logs.add(msg);
+
+        } catch (InvalidEventException e) {
+            String msg = "Invalid event: " + event.getName() +
+                    " - " + e.getMessage();
+            System.out.println(msg);
+            logs.add(msg);
+
+        } catch (RoomUnavailableException e) {
+            String msg = "Room unavailable for event: " +
+                    event.getName() + " - " + e.getMessage();
+            System.out.println(msg);
+            logs.add(msg);
+        }
+    }
+
     private static void scheduleEvents() {
         System.out.println("\n--- Scheduling Events ---");
 
@@ -232,17 +271,14 @@ public class Main {
     }
 
     // =========================
-    // ⭐Cancel Scheduling
+    // Cancel Scheduling
     // =========================
     private static void clearAllBookings() {
         System.out.println("\n--- Clearing All Bookings ---");
 
         for (Room room : rooms) {
             room.release();
-    }
-
-        // 可选：是否清 Scheduler 日志
-        // scheduler.clearLogs();
+        }
 
         System.out.println("All room bookings have been cleared.");
     }
