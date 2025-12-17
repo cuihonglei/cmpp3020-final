@@ -40,29 +40,28 @@ public class Room {
         this.equipment=equipment;
     }
 
-    // Called after a room is successfully assigned
     public synchronized boolean occupy() {
         if (occupied) return false;
         this.occupied = true;
         return true;
     }
 
-    // Encapsulates business validation logic:
-    // checks whether this room can host the given event
+    public synchronized void release() {
+    occupied = false;
+    }
+
+
     public boolean canHost(Event event) throws CapacityExceededException {
 
-         // 1 Room is already occupied -> reject immediately
         if (occupied) {
             return false;
         }
 
-        // 2 Capacity is insufficient -> throw exception
         if (event.getAttendees() > capacity) {
             throw new CapacityExceededException(
                     "Room " + id + " capacity (" + capacity + ") is less than event size (" + event.getAttendees() + ")", 405);
         }
 
-        // 3 Check if the room satisfies the event's equipment requirements
         return equipment.containsAll(event.getRequiredEquipment());
     }
 }

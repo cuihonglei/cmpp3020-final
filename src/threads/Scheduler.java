@@ -7,6 +7,8 @@ import exception.InvalidEventException;
 import exception.RoomUnavailableException;
 import service.Booking;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -24,6 +26,8 @@ public class Scheduler {
     public Booking schedule(Event event) throws InvalidEventException, RoomUnavailableException {
 
         validateEvent(event);
+        // ⭐ 新增：记录开始调度
+        logs.add("[SCHEDULE] Start scheduling event: " + event.getName());
 
         CompletionService<Room> completionService = new ExecutorCompletionService<>(executor);
 
@@ -36,6 +40,8 @@ public class Scheduler {
                     }
                 } catch (CapacityExceededException e) {
                     System.out.println("Capacity check failed: " + e.getMessage() + ", code: "+e.getCode());
+                    // ⭐ 新增：失败写入日志
+                    logs.add("[CAPACITY_FAIL][" + Thread.currentThread().getName() + "] "+ "Room " + room.getId()+ " cannot host event " + event.getName());
                 }
                 return null;
             });
@@ -47,10 +53,13 @@ public class Scheduler {
                 Future<Room> future = completionService.take();
                 Room room = future.get();
                 if (room != null && room.occupy()) {
+                    // ⭐ 新增：成功写入日志
+                    logs.add("[SUCCESS][" + Thread.currentThread().getName() + "] "+ "Event " + event.getName()+ " assigned to room " + room.getId());
                     return new Booking(event, room);
                 }
             } catch (InterruptedException | ExecutionException e) {
                 System.out.println("Validation error: " + e.getMessage());
+                
             }
         }
 
@@ -63,9 +72,26 @@ public class Scheduler {
         }
     }
 
+    // ✅ 线程安全日志列表（可被 Main 读取）
+    private final List<String> logs =
+            Collections.synchronizedList(new ArrayList<>());
+
+    // =========================
+    // 日志接口（给 Main 调用）
+    // =========================
+    public List<String> getLogs() {
+        return new ArrayList<>(logs); 
+    }
+
+    public void clearLogs() {
+        logs.clear();
+        logs.add("[SYSTEM] Logs cleared");
+    }
+    // =========================
 
     public void shutdown() {
         executor.shutdown();
     }
 }
+
 
