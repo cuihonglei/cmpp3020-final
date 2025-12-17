@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class Scheduler {
 
@@ -19,52 +20,47 @@ public class Scheduler {
 
     public Scheduler(List<Room> rooms) {
         this.rooms = rooms;
-        // 固定大小线程池（标准教学 & 工程实践）
+        // Fixed thread pool size
         this.executor = Executors.newFixedThreadPool(4);
     }
 
-    public Booking schedule(Event event) throws InvalidEventException, RoomUnavailableException {
+    public Booking schedule(Event event)
+            throws InvalidEventException, RoomUnavailableException {
 
+        // 1. Validate event validity
         validateEvent(event);
-        // ⭐ 新增：记录开始调度
-        logs.add("[SCHEDULE] Start scheduling event: " + event.getName());
 
-        CompletionService<Room> completionService = new ExecutorCompletionService<>(executor);
-
-        //并行提交房间验证任务
-        for (Room room : rooms) {
-            completionService.submit(() -> {
-                try {
-                    if (room.canHost(event)) {
-                        return room;
+        // 2. Create a Callable task for each Room.
+        List<Callable<Room>> tasks = rooms.stream()
+                .map(room -> (Callable<Room>) () -> {
+                    try {
+                        // Can it accommodate + atomic occupancy
+                        if (room.canHost(event) && room.occupy()) {
+                            return room; // Success: invokeAny will return immediately.
+                        }
+                    } catch (CapacityExceededException e) {
+                        // This is converted to a runtime exception, allowing invokeAny to continue attempting other tasks.
+                        throw new RuntimeException(
+                                "Capacity exceeded for room: " + room.getId(), e);
                     }
-                } catch (CapacityExceededException e) {
-                    System.out.println("Capacity check failed: " + e.getMessage() + ", code: "+e.getCode());
-                    // ⭐ 新增：失败写入日志
-                    logs.add("[CAPACITY_FAIL][" + Thread.currentThread().getName() + "] "+ "Room " + room.getId()+ " cannot host event " + event.getName());
-                }
-                return null;
-            });
-        }
 
-        // 按任务完成顺序获取结果
-        for (int i = 0; i < rooms.size(); i++) {
-            try {
-                Future<Room> future = completionService.take();
-                Room room = future.get();
-                if (room != null && room.occupy()) {
-                    // ⭐ 新增：成功写入日志
-                    logs.add("[SUCCESS][" + Thread.currentThread().getName() + "] "+ "Event " + event.getName()+ " assigned to room " + room.getId());
-                    return new Booking(event, room);
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                System.out.println("Validation error: " + e.getMessage());
-                
-            }
-        }
+                    // Inappropriate: An exception must be thrown; null cannot be returned.
+                    throw new RoomUnavailableException("Room not suitable", 403);
+                })
+                .collect(Collectors.toList());
 
-        throw new RoomUnavailableException("No available room can host event: " + event.getName(), 403);
+        // 3. Execute tasks in parallel and return the first successful Room.
+        try {
+            Room room = executor.invokeAny(tasks);
+            return new Booking(event, room);
+
+        } catch (InterruptedException | ExecutionException e) {
+            // All tasks fail, or the thread is interrupted.
+            throw new RoomUnavailableException(
+                    "No available room can host event: " + event.getName(), 403);
+        }
     }
+
 
     private void validateEvent(Event event) throws InvalidEventException {
         if (event.getAttendees() <= 0) {
@@ -72,26 +68,23 @@ public class Scheduler {
         }
     }
 
-    // ✅ 线程安全日志列表（可被 Main 读取）
+
+    public void shutdown() {
+        executor.shutdown();
+    }
+
+    // Thread-safe log list (readable by Main)
     private final List<String> logs =
             Collections.synchronizedList(new ArrayList<>());
 
-    // =========================
-    // 日志接口（给 Main 调用）
-    // =========================
+    // call log
     public List<String> getLogs() {
-        return new ArrayList<>(logs); 
+        return new ArrayList<>(logs);
     }
 
     public void clearLogs() {
         logs.clear();
         logs.add("[SYSTEM] Logs cleared");
     }
-    // =========================
-
-    public void shutdown() {
-        executor.shutdown();
-    }
 }
-
 
